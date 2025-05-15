@@ -30,15 +30,6 @@ app.get('/', (_: Request, res: Response) => {
     });
 });
 
-// Routes
-import routes from './routes';
-
-app.use('/api/v1/students', routes.studentRoutes);
-app.use('/api/v1/companies', routes.companyRoutes);
-app.use('/api/v1/skills', routes.skillRoutes);
-app.use('/api/v1/auth', routes.authRoutes);
-app.use('/api/v1/admin', routes.adminRoutes);
-
 app.use('*', (_: Request, res: Response) => {
     return res.status(404).json({
         success: false,
