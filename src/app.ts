@@ -1,6 +1,6 @@
 import express from 'express';
 import { Request, Response } from 'express';
-import { clerkClient, clerkMiddleware } from '@clerk/express';
+// import { clerkClient, clerkMiddleware } from '@clerk/express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import env from './config/env';
@@ -22,15 +22,14 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(clerkMiddleware());
+// ? Clerk
+// app.use(clerkMiddleware());
 
 app.get('/', async (_: Request, res: Response) => {
-    // todo: remove this
-    const users = await clerkClient.users.getUserList();
     return res.status(200).json({
         success: true,
-        message: 'Server is running',
-        data: users,
+        message: 'Flux Backend API',
+        data: null,
     });
 });
 

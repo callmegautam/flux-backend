@@ -120,5 +120,5 @@ dist
 
 # End of https://mrkandreev.name/snippets/gitignore-generator/#Node
 .DS_Store
-
+.vscode
 prisma/generated
