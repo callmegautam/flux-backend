@@ -7,6 +7,8 @@ const schema = z.object({
     DB_URL: z.string(),
     JWT_SECRET: z.string(),
     JWT_EXPIRY: z.string(),
+    CLERK_PUBLISHABLE_KEY: z.string(),
+    CLERK_SECRET_KEY: z.string(),
 });
 
 export default schema.parse(process.env);
