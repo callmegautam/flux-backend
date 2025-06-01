@@ -1,13 +1,10 @@
 import asyncHandler from "@/utils/asyncHandler";
-import {
-    fetchPackageData,
-    isPackageExists,
-    savePackageData,
-} from "@/utils/package-utils";
+import { downloadPackageTarball, fetchPackageData, isPackageExists, savePackageData } from "@/utils/package-utils";
 import { Request, Response } from "express";
 
+// TODO : ADD LOGIC OF VERSION HANDLING
 export const getPackage = asyncHandler(async (req: Request, res: Response) => {
-    const packageName = req.params.name;
+    const { packageName, version } = req.body;
 
     if (!packageName) {
         return res.status(400).json({ error: "Package name is required" });
@@ -28,6 +25,13 @@ export const getPackage = asyncHandler(async (req: Request, res: Response) => {
         data: null,
     });
 
+    // TODO: add logic to upload tarball to S3 or any other storage service and update fileUrl
+
+    const filePath = await downloadPackageTarball(packageName);
+    if (!filePath) {
+        console.log(`Failed to download package tarball for ${packageName}`);
+    }
+
     const packageData = await fetchPackageData(packageName);
     if (!packageData) {
         return console.log(`Package ${packageName} not found on npm registry`);
@@ -38,6 +42,4 @@ export const getPackage = asyncHandler(async (req: Request, res: Response) => {
     if (!savedPackage) {
         return console.log(`Failed to save package data for ${packageName}`);
     }
-
-    // TODO: add logic to upload tarball to S3 or any other storage service and update fileUrl
 });

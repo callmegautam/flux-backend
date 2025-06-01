@@ -108,4 +108,25 @@ export const downloadPackageTarball = async (packageName: string, customVersion:
     }
 };
 
-export const uploadToS3 = async (file: any) => {};
+// export const uploadToS3 = async (filePath: string) => {
+//     try {
+//         const client = new AWS.S3({
+//             accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+//             secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+//             region: process.env.AWS_REGION,
+//         });
+//         const uploadParams = {
+//             Bucket: process.env.AWS_BUCKET_NAME,
+//             Key: `${packageName}-${version}.tgz`,
+//             Body: fs.createReadStream(filePath),
+//             ContentType: "application/octet-stream",
+//         };
+//         await client.upload(uploadParams).promise();
+
+//         console.log(`Uploading ${filePath} to S3`);
+//         return true;
+//     } catch (error) {
+//         console.error(`Error uploading to S3: ${error}`);
+//         return false;
+//     }
+// };
