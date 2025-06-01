@@ -15,6 +15,7 @@ const timestamps = {
 export const packages = pgTable("packages", {
     id: serial("id").primaryKey(),
     name: varchar("name", { length: 255 }).notNull().unique(),
+    fileUrl: varchar("file_url", { length: 255 }),
     latestVersion: varchar("latest_version", { length: 50 }).notNull(),
     license: varchar("license", { length: 50 }),
     description: text("description"),

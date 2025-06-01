@@ -6,7 +6,7 @@ import cookieParser from "cookie-parser";
 import env from "./config/env";
 import morgan from "morgan";
 import globalErrorHandler from "./middlewares/error-handler.middleware";
-import axios from "axios";
+import { fetchPackageData } from "./utils/package-utils";
 
 const app = express();
 
@@ -35,23 +35,27 @@ app.get("/", async (_: Request, res: Response) => {
 });
 
 // Temporary route for testing
-app.get("/test", async (_: Request, res: Response) => {
-    axios
-        .get("https://registry.npmjs.org/atarashi")
-        .then((response) => {
-            console.log("Response from NPM Registry");
-            console.log(response.data);
-        })
-        .catch((error) => {
-            console.error("Error fetching from NPM Registry:", error);
-        });
+// app.get("/test", async (_: Request, res: Response) => {
+//     const response = await fetchPackageData("atarhi");
 
-    return res.status(200).json({
-        success: true,
-        message: "Test Route",
-        data: null,
-    });
-});
+//     if (!response) {
+//         console.log("Failed to fetch package data");
+//         return res.status(500).json({
+//             success: false,
+//             message: "Failed to fetch package data",
+//             data: null,
+//         });
+//     }
+
+//     console.log(response);
+//     console.log("Package data fetched successfully:");
+
+//     return res.status(200).json({
+//         success: true,
+//         message: "Test Route",
+//         data: null,
+//     });
+// });
 
 app.use("*", (_: Request, res: Response) => {
     return res.status(404).json({
