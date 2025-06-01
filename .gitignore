@@ -122,3 +122,7 @@ dist
 .DS_Store
 .vscode
 prisma/generated
+
+
+# Local files
+demo.json
