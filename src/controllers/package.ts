@@ -1,9 +1,14 @@
+import { Request, Response } from "express";
 import db from "@/db";
 import { packages } from "@/db/schema";
-import asyncHandler from "@/utils/asyncHandler";
-import { fetchPackageData, isPackageExists, savePackageData, uploadPackageTarballToS3 } from "@/utils/package-utils";
 import { eq } from "drizzle-orm";
-import { Request, Response } from "express";
+import {
+    uploadPackageTarballToS3,
+    fetchPackageData,
+    isPackageExists,
+    savePackageData,
+    asyncHandler,
+} from "@/utils/index";
 
 // TODO : ADD LOGIC OF VERSION HANDLING
 export const getPackage = asyncHandler(async (req: Request, res: Response) => {
@@ -41,8 +46,6 @@ export const getPackage = asyncHandler(async (req: Request, res: Response) => {
         data: packageData.versions[version].dist.tarball,
     });
 
-    // TODO: add logic to upload tarball to S3 or any other storage service and update fileUrl
-
     const fileUrl = await uploadPackageTarballToS3(packageName, version);
 
     if (!fileUrl) {
@@ -51,7 +54,7 @@ export const getPackage = asyncHandler(async (req: Request, res: Response) => {
 
     await savePackageData(packageData);
 
-    const packageInfo = await db.update(packages).set({ fileUrl }).where(eq(packages.name, packageName)).returning();
+    await db.update(packages).set({ fileUrl }).where(eq(packages.name, packageName)).returning();
 
-    console.log(packageInfo);
+    console.log(`Package ${packageName} data saved successfully with file URL: ${fileUrl}`);
 });
