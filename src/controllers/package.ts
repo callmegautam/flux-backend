@@ -1,9 +1,14 @@
+import db from "@/db";
+import { packages } from "@/db/schema";
 import asyncHandler from "@/utils/asyncHandler";
-import { downloadPackageTarball, fetchPackageData, isPackageExists, savePackageData } from "@/utils/package-utils";
+import { fetchPackageData, isPackageExists, savePackageData, uploadPackageTarballToS3 } from "@/utils/package-utils";
+import { eq } from "drizzle-orm";
 import { Request, Response } from "express";
 
 // TODO : ADD LOGIC OF VERSION HANDLING
 export const getPackage = asyncHandler(async (req: Request, res: Response) => {
+    console.log("Received request to get package data");
+
     const { packageName, version } = req.body;
 
     if (!packageName) {
@@ -19,27 +24,34 @@ export const getPackage = asyncHandler(async (req: Request, res: Response) => {
         });
     }
 
-    res.status(404).json({
-        success: false,
-        message: "Package not found",
-        data: null,
+    const packageData = await fetchPackageData(packageName);
+    if (!packageData) {
+        return res.status(404).json({
+            success: false,
+            message: "Package not found",
+            data: null,
+        });
+    }
+
+    console.log(`Tarball URL for package ${packageName}:`, packageData.versions[version]?.dist?.tarball);
+
+    res.status(200).json({
+        success: true,
+        message: "Package data fetched successfully",
+        data: packageData.versions[version].dist.tarball,
     });
 
     // TODO: add logic to upload tarball to S3 or any other storage service and update fileUrl
 
-    const filePath = await downloadPackageTarball(packageName);
-    if (!filePath) {
-        console.log(`Failed to download package tarball for ${packageName}`);
+    const fileUrl = await uploadPackageTarballToS3(packageName, version);
+
+    if (!fileUrl) {
+        return console.log(`Failed to upload package tarball for ${packageName}`);
     }
 
-    const packageData = await fetchPackageData(packageName);
-    if (!packageData) {
-        return console.log(`Package ${packageName} not found on npm registry`);
-    }
+    await savePackageData(packageData);
 
-    const savedPackage = await savePackageData(packageData);
+    const packageInfo = await db.update(packages).set({ fileUrl }).where(eq(packages.name, packageName)).returning();
 
-    if (!savedPackage) {
-        return console.log(`Failed to save package data for ${packageName}`);
-    }
+    console.log(packageInfo);
 });
