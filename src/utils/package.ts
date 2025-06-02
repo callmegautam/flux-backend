@@ -43,6 +43,13 @@ export const fetchPackageData = async (packageName: string) => {
  */
 export const savePackageData = async (packageInfo: any) => {
     try {
+        const existingPackage = await db.select().from(packages).where(eq(packages.name, packageInfo.name)).limit(1);
+
+        if (existingPackage.length > 0) {
+            console.log(`Package ${packageInfo.name} already exists in the database`);
+            return null;
+        }
+
         const latestVersion = packageInfo["dist-tags"].latest;
         console.log(`Latest version for package ${packageInfo.name}: ${latestVersion}`);
         const rawData = {

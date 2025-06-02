@@ -20,6 +20,8 @@ export const getPackage = asyncHandler(async (req: Request, res: Response) => {
 
     const packageExists = await isPackageExists(packageName, version);
 
+    // console.log(`data: ${packageExists}`);
+
     if (packageExists) {
         return res.status(200).json({
             success: true,
@@ -45,15 +47,21 @@ export const getPackage = asyncHandler(async (req: Request, res: Response) => {
         data: packageData.versions[version].dist.tarball,
     });
 
+    console.log("CHECKPOINT 1");
+
     const fileUrl = await uploadPackageTarballToS3(packageName, version);
 
     if (!fileUrl) {
         return console.log(`Failed to upload package tarball for ${packageName}`);
     }
+    console.log("CHECKPOINT 2");
 
     await savePackageData(packageData);
 
-    await db.insert(versions).values({ packageId: packageData._id, version, fileUrl });
+    const packageDataFromDb = await db.select().from(packages).where(eq(packages.name, packageName)).limit(1);
 
+    await db.insert(versions).values({ packageId: packageDataFromDb[0].id, version: version, fileUrl }).returning();
+
+    console.log("CHECKPOINT 3");
     console.log(`Package ${packageName} data saved successfully with file URL: ${fileUrl}`);
 });
