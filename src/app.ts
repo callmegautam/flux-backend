@@ -6,7 +6,6 @@ import cookieParser from "cookie-parser";
 import env from "./config/env";
 import morgan from "morgan";
 import globalErrorHandler from "./middlewares/error-handler.middleware";
-import { fetchPackageData } from "./utils/package-utils";
 
 const app = express();
 
@@ -34,28 +33,9 @@ app.get("/", async (_: Request, res: Response) => {
     });
 });
 
-// Temporary route for testing
-// app.get("/test", async (_: Request, res: Response) => {
-//     const response = await fetchPackageData("atarhi");
-
-//     if (!response) {
-//         console.log("Failed to fetch package data");
-//         return res.status(500).json({
-//             success: false,
-//             message: "Failed to fetch package data",
-//             data: null,
-//         });
-//     }
-
-//     console.log(response);
-//     console.log("Package data fetched successfully:");
-
-//     return res.status(200).json({
-//         success: true,
-//         message: "Test Route",
-//         data: null,
-//     });
-// });
+// ? Routes
+import packageRoutes from "./routes/index.routes";
+app.use("/api/v1/", packageRoutes);
 
 app.use("*", (_: Request, res: Response) => {
     return res.status(404).json({
