@@ -7,4 +7,16 @@ const db = drizzle(pool);
 
 // const db = drizzle(env.DB_URL);
 
+async function testDBConnection() {
+    try {
+        // Simple query to get current timestamp from Postgres
+        const result = await db.execute(`SELECT NOW()`);
+        console.log("✅ Database connection works. Current time:", result.rows[0].now);
+    } catch (error) {
+        console.error("❌ Database connection failed:", error);
+    }
+}
+
+testDBConnection();
+
 export default db;
