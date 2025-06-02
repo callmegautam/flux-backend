@@ -12,12 +12,10 @@ import {
 
 // TODO : ADD LOGIC OF VERSION HANDLING
 export const getPackage = asyncHandler(async (req: Request, res: Response) => {
-    console.log("Received request to get package data");
-
     const { packageName, version } = req.body;
 
-    if (!packageName) {
-        return res.status(400).json({ error: "Package name is required" });
+    if (!packageName || !version) {
+        return res.status(400).json({ success: false, message: "Package name and version are required", data: null });
     }
 
     const packageExists = await isPackageExists(packageName);

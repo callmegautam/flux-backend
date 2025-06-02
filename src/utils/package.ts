@@ -34,6 +34,8 @@ export const fetchPackageData = async (packageName: string) => {
     }
 };
 
+// TODO: Add logic to handle different package versions AND add them to the database
+
 /**
  * Saves package data to the database.
  * @param packageInfo - The package data to save.
@@ -71,7 +73,7 @@ export const savePackageData = async (packageInfo: any) => {
     }
 };
 
-export const isPackageExists = async (packageName: string) => {
+export const isPackageExists = async (packageName: string, version?: string) => {
     try {
         const result = await db.select().from(packages).where(eq(packages.name, packageName)).limit(1);
 
