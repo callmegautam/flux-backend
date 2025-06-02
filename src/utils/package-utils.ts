@@ -3,10 +3,10 @@ import { packages } from "@/db/schema";
 import { packageSchema } from "@/validators/package";
 import axios from "axios";
 import { eq } from "drizzle-orm";
-import path from "path";
 import { promisify } from "util";
 import { pipeline } from "stream";
-import fs from "fs";
+import env from "@/config/env";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 export const npmAPIBaseURL = "https://registry.npmjs.org/";
 
@@ -19,7 +19,12 @@ export const pipelineAsync = promisify(pipeline);
 
 export const fetchPackageData = async (packageName: string) => {
     try {
-        const response = await npmAPI.get(packageName);
+        // const response = await npmAPI.get(packageName);
+        const response = await npmAPI.get(encodeURIComponent(packageName));
+        if (response.status !== 200) {
+            console.error(`Error fetching package data: ${response.status}`);
+            return null;
+        }
         return response.data;
     } catch (error) {
         console.error(`Error fetching package data: ${error}`);
@@ -30,9 +35,10 @@ export const fetchPackageData = async (packageName: string) => {
 export const savePackageData = async (packageInfo: any) => {
     try {
         const latestVersion = packageInfo["dist-tags"].latest;
+        console.log(`Latest version for package ${packageInfo.name}: ${latestVersion}`);
         const rawData = {
             name: packageInfo._id ?? packageInfo.name,
-            latest: latestVersion,
+            latestVersion: latestVersion,
             license: packageInfo.versions[latestVersion]?.license ?? packageInfo.license,
             description: packageInfo.versions[latestVersion]?.description ?? packageInfo.description,
             readme: packageInfo.readme,
@@ -73,7 +79,52 @@ export const isPackageExists = async (packageName: string) => {
     }
 };
 
-export const downloadPackageTarball = async (packageName: string, customVersion: any = null) => {
+// export const downloadPackageTarball = async (packageName: string, customVersion: any = null) => {
+//     try {
+//         const packageData = await fetchPackageData(packageName);
+
+//         if (!packageData || !packageData["dist-tags"]?.latest) {
+//             console.error(`Package ${packageName} not found or has no versions`);
+//             return null;
+//         }
+
+//         const version = customVersion ?? packageData["dist-tags"].latest;
+//         if (!packageData.versions[version]?.dist?.tarball) {
+//             console.error(`Package ${packageName} has no tarball`);
+//             return null;
+//         }
+
+//         const filePath = path.join(process.cwd(), "_temp", `${packageName}-${version}.tgz`);
+
+//         const response = await axios({
+//             url: packageData.versions[version].dist.tarball,
+//             responseType: "stream",
+//         });
+
+//         const writer = fs.createWriteStream(filePath);
+
+//         await pipelineAsync(response.data, writer);
+
+//         console.log(`Package ${packageName} version ${version} downloaded successfully`);
+
+//         return filePath;
+//     } catch (error) {
+//         console.error(`Error downloading package tarball: ${error}`);
+//         return null;
+//     }
+// };
+
+const s3 = new S3Client({
+    region: env.AWS_REGION,
+    credentials: {
+        accessKeyId: env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
+    },
+});
+
+const BUCKET_NAME = env.AWS_S3_BUCKET;
+
+export const uploadPackageTarballToS3 = async (packageName: string, customVersion: string | null = null) => {
     try {
         const packageData = await fetchPackageData(packageName);
 
@@ -83,50 +134,54 @@ export const downloadPackageTarball = async (packageName: string, customVersion:
         }
 
         const version = customVersion ?? packageData["dist-tags"].latest;
-        if (!packageData.versions[version]?.dist?.tarball) {
-            console.error(`Package ${packageName} has no tarball`);
+        const tarballUrl = packageData.versions[version]?.dist?.tarball;
+
+        if (!tarballUrl) {
+            console.error(`Package ${packageName}@${version} has no tarball`);
             return null;
         }
 
-        const filePath = path.join(process.cwd(), "_temp", `${packageName}-${version}.tgz`);
+        const response = await axios.get(tarballUrl, { responseType: "stream" });
+        const contentLength = parseInt(response.headers["content-length"], 10);
 
-        const response = await axios({
-            url: packageData.versions[version].dist.tarball,
-            responseType: "stream",
-        });
+        console.log(`Content length: ${contentLength}`);
 
-        const writer = fs.createWriteStream(filePath);
+        if (!contentLength || isNaN(contentLength)) {
+            console.error(`Missing or invalid content length for ${packageName}@${version}`);
+            return null;
+        }
 
-        await pipelineAsync(response.data, writer);
+        const objectKey = `${packageName}/${packageName}-${version}.tgz`;
 
-        console.log(`Package ${packageName} version ${version} downloaded successfully`);
+        let body;
+        let contentType = "application/gzip";
 
-        return filePath;
+        if (contentLength < 8192) {
+            const bufferResponse = await axios.get(tarballUrl, { responseType: "arraybuffer" });
+            body = Buffer.from(bufferResponse.data);
+        } else {
+            const streamResponse = await axios.get(tarballUrl, { responseType: "stream" });
+            body = streamResponse.data;
+        }
+
+        await s3.send(
+            new PutObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: objectKey,
+                Body: body,
+                ContentType: contentType,
+                ContentLength: contentLength,
+            })
+        );
+
+        const publicUrl = `https://${BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/${objectKey}`;
+
+        console.log(`✅ Uploaded ${packageName}@${version} to S3`);
+        console.log(`🌐 Public URL: ${publicUrl}`);
+
+        return publicUrl;
     } catch (error) {
-        console.error(`Error downloading package tarball: ${error}`);
+        console.error("❌ Error uploading package tarball to S3:", error);
         return null;
     }
 };
-
-// export const uploadToS3 = async (filePath: string) => {
-//     try {
-//         const client = new AWS.S3({
-//             accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-//             secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-//             region: process.env.AWS_REGION,
-//         });
-//         const uploadParams = {
-//             Bucket: process.env.AWS_BUCKET_NAME,
-//             Key: `${packageName}-${version}.tgz`,
-//             Body: fs.createReadStream(filePath),
-//             ContentType: "application/octet-stream",
-//         };
-//         await client.upload(uploadParams).promise();
-
-//         console.log(`Uploading ${filePath} to S3`);
-//         return true;
-//     } catch (error) {
-//         console.error(`Error uploading to S3: ${error}`);
-//         return false;
-//     }
-// };
