@@ -7,6 +7,8 @@ import env from "./config/env";
 import morgan from "morgan";
 import globalErrorHandler from "./middlewares/error-handler.middleware";
 
+import packageRoutes from "./routes/index.routes";
+
 const app = express();
 
 const isProduction = env.NODE_ENV === "PRODUCTION";
@@ -34,7 +36,6 @@ app.get("/", async (_: Request, res: Response) => {
 });
 
 // ? Routes
-import packageRoutes from "./routes/index.routes";
 app.use("/api/v1/", packageRoutes);
 
 app.use("*", (_: Request, res: Response) => {

@@ -15,9 +15,13 @@ export const npmAPI = axios.create({
 
 export const pipelineAsync = promisify(pipeline);
 
+/**
+ * Fetches package data from the npm registry.
+ * @param packageName - The name of the package to fetch data for.
+ * @returns A promise that resolves to the package data if found, or null if not found or an error occurs.
+ */
 export const fetchPackageData = async (packageName: string) => {
     try {
-        // const response = await npmAPI.get(packageName);
         const response = await npmAPI.get(encodeURIComponent(packageName));
         if (response.status !== 200) {
             console.error(`Error fetching package data: ${response.status}`);
@@ -30,6 +34,11 @@ export const fetchPackageData = async (packageName: string) => {
     }
 };
 
+/**
+ * Saves package data to the database.
+ * @param packageInfo - The package data to save.
+ * @returns A promise that resolves to the saved package data, or null if an error occurs.
+ */
 export const savePackageData = async (packageInfo: any) => {
     try {
         const latestVersion = packageInfo["dist-tags"].latest;

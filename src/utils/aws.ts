@@ -13,7 +13,10 @@ const s3 = new S3Client({
 
 const BUCKET_NAME = env.AWS_S3_BUCKET;
 
-export const uploadPackageTarballToS3 = async (packageName: string, customVersion: string | null = null) => {
+export const uploadPackageTarballToS3 = async (
+    packageName: string,
+    customVersion: string | null = null
+): Promise<string | null> => {
     try {
         const packageData = await fetchPackageData(packageName);
 
@@ -65,12 +68,12 @@ export const uploadPackageTarballToS3 = async (packageName: string, customVersio
 
         const publicUrl = `https://${BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/${objectKey}`;
 
-        console.log(`✅ Uploaded ${packageName}@${version} to S3`);
-        console.log(`🌐 Public URL: ${publicUrl}`);
+        console.log(`Uploaded ${packageName}@${version} to S3`);
+        console.log(`Public URL: ${publicUrl}`);
 
         return publicUrl;
     } catch (error) {
-        console.error("❌ Error uploading package tarball to S3:", error);
+        console.error("Error uploading package tarball to S3:", error);
         return null;
     }
 };
