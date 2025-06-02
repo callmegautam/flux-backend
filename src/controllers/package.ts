@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import db from "@/db";
-import { packages } from "@/db/schema";
+import { packages, versions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import {
     uploadPackageTarballToS3,
@@ -18,7 +18,8 @@ export const getPackage = asyncHandler(async (req: Request, res: Response) => {
         return res.status(400).json({ success: false, message: "Package name and version are required", data: null });
     }
 
-    const packageExists = await isPackageExists(packageName);
+    const packageExists = await isPackageExists(packageName, version);
+
     if (packageExists) {
         return res.status(200).json({
             success: true,
@@ -52,7 +53,7 @@ export const getPackage = asyncHandler(async (req: Request, res: Response) => {
 
     await savePackageData(packageData);
 
-    await db.update(packages).set({ fileUrl }).where(eq(packages.name, packageName)).returning();
+    await db.insert(versions).values({ packageId: packageData._id, version, fileUrl });
 
     console.log(`Package ${packageName} data saved successfully with file URL: ${fileUrl}`);
 });

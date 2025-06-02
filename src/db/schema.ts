@@ -1,11 +1,4 @@
-import {
-    pgTable,
-    serial,
-    text,
-    timestamp,
-    varchar,
-    integer,
-} from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, varchar, integer } from "drizzle-orm/pg-core";
 
 const timestamps = {
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
@@ -15,7 +8,7 @@ const timestamps = {
 export const packages = pgTable("packages", {
     id: serial("id").primaryKey(),
     name: varchar("name", { length: 255 }).notNull().unique(),
-    fileUrl: varchar("file_url", { length: 255 }),
+    // fileUrl: varchar("file_url", { length: 255 }),
     latestVersion: varchar("latest_version", { length: 50 }).notNull(),
     license: varchar("license", { length: 50 }),
     description: text("description"),
@@ -25,25 +18,29 @@ export const packages = pgTable("packages", {
 
 export const versions = pgTable("versions", {
     id: serial("id").primaryKey(),
+    packageId: integer("package_id")
+        .notNull()
+        .references(() => packages.id, { onDelete: "cascade" }),
     version: varchar("version", { length: 50 }).notNull(),
+    fileUrl: varchar("tarball_url", { length: 255 }),
     ...timestamps,
 });
 
-export const packageVersions = pgTable(
-    "package_versions",
-    {
-        packageId: integer("package_id")
-            .notNull()
-            .references(() => packages.id, { onDelete: "cascade" }),
-        versionId: integer("version_id")
-            .notNull()
-            .references(() => versions.id, { onDelete: "cascade" }),
-        ...timestamps,
-    },
-    (table) => ({
-        pk: [table.packageId, table.versionId],
-    })
-);
+// export const packageVersions = pgTable(
+//     "package_versions",
+//     {
+//         packageId: integer("package_id")
+//             .notNull()
+//             .references(() => packages.id, { onDelete: "cascade" }),
+//         versionId: integer("version_id")
+//             .notNull()
+//             .references(() => versions.id, { onDelete: "cascade" }),
+//         ...timestamps,
+//     },
+//     (table) => ({
+//         pk: [table.packageId, table.versionId],
+//     })
+// );
 
 export const authors = pgTable("authors", {
     id: serial("id").primaryKey(),

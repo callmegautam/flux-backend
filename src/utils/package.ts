@@ -1,8 +1,8 @@
 import db from "@/db";
-import { packages } from "@/db/schema";
+import { packages, versions } from "@/db/schema";
 import { packageSchema } from "@/validators/package";
 import axios from "axios";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { promisify } from "util";
 import { pipeline } from "stream";
 
@@ -61,19 +61,24 @@ export const savePackageData = async (packageInfo: any) => {
         }
 
         const result = await db.insert(packages).values(data).returning();
+
         if (result.length === 0) {
             console.error("Failed to save package data");
             return null;
         }
-
-        return result[0];
     } catch (error) {
         console.error(`Error saving package data: ${error}`);
         return null;
     }
 };
 
-export const isPackageExists = async (packageName: string, version?: string) => {
+/**
+ * Checks if a package exists in the database.
+ * @param packageName - The name of the package to check.
+ * @param version - Optional version to check for.
+ * @returns A promise that resolves to the package data if it exists, or null if it does not exist or an error occurs.
+ */
+export const isPackageExists = async (packageName: string, version: string) => {
     try {
         const result = await db.select().from(packages).where(eq(packages.name, packageName)).limit(1);
 
@@ -81,7 +86,22 @@ export const isPackageExists = async (packageName: string, version?: string) => 
             return null;
         }
 
-        return result[0];
+        const isVersionAvailable = await db
+            .select()
+            .from(versions)
+            .where(and(eq(versions.packageId, result[0].id), eq(versions.version, version)))
+            .limit(1);
+
+        if (isVersionAvailable.length === 0) {
+            console.log(`Version ${version} of package ${packageName} does not exist.`);
+            return null;
+        }
+
+        return {
+            ...result[0],
+            version: isVersionAvailable[0].version,
+            fileUrl: isVersionAvailable[0].fileUrl,
+        };
     } catch (error) {
         console.error(`Error checking package existence: ${error}`);
         return false;
