@@ -33,28 +33,14 @@ export const uploadPackageTarballToS3 = async (
             return null;
         }
 
-        const response = await axios.get(tarballUrl, { responseType: "stream" });
-        const contentLength = parseInt(response.headers["content-length"], 10);
-
-        console.log(`Content length: ${contentLength}`);
-
-        if (!contentLength || isNaN(contentLength)) {
-            console.error(`Missing or invalid content length for ${packageName}@${version}`);
-            return null;
-        }
-
+        // Download tarball as buffer
+        const response = await axios.get(tarballUrl, { responseType: "arraybuffer" });
+        const body = Buffer.from(response.data);
+        const contentLength = body.length;
+        const contentType = "application/gzip";
         const objectKey = `${packageName}/${packageName}-${version}.tgz`;
 
-        let body;
-        let contentType = "application/gzip";
-
-        if (contentLength < 8192) {
-            const bufferResponse = await axios.get(tarballUrl, { responseType: "arraybuffer" });
-            body = Buffer.from(bufferResponse.data);
-        } else {
-            const streamResponse = await axios.get(tarballUrl, { responseType: "stream" });
-            body = streamResponse.data;
-        }
+        console.log(`Content length: ${contentLength}`);
 
         await s3.send(
             new PutObjectCommand({
