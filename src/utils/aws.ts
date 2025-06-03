@@ -33,7 +33,6 @@ export const uploadPackageTarballToS3 = async (
             return null;
         }
 
-        // Download tarball as buffer
         const response = await axios.get(tarballUrl, { responseType: "arraybuffer" });
         const body = Buffer.from(response.data);
         const contentLength = body.length;
@@ -55,7 +54,6 @@ export const uploadPackageTarballToS3 = async (
         const publicUrl = `https://${BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/${objectKey}`;
 
         console.log(`Uploaded ${packageName}@${version} to S3`);
-        console.log(`Public URL: ${publicUrl}`);
 
         return publicUrl;
     } catch (error) {

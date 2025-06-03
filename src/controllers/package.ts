@@ -39,22 +39,17 @@ export const getPackage = asyncHandler(async (req: Request, res: Response) => {
         });
     }
 
-    console.log(`Tarball URL for package ${packageName}:`, packageData.versions[version]?.dist?.tarball);
-
     res.status(200).json({
         success: true,
         message: "Package data fetched successfully",
         data: packageData.versions[version].dist.tarball,
     });
 
-    console.log("CHECKPOINT 1");
-
     const fileUrl = await uploadPackageTarballToS3(packageName, version);
 
     if (!fileUrl) {
         return console.log(`Failed to upload package tarball for ${packageName}`);
     }
-    console.log("CHECKPOINT 2");
 
     await savePackageData(packageData);
 
@@ -62,6 +57,5 @@ export const getPackage = asyncHandler(async (req: Request, res: Response) => {
 
     await db.insert(versions).values({ packageId: packageDataFromDb[0].id, version: version, fileUrl }).returning();
 
-    console.log("CHECKPOINT 3");
     console.log(`Package ${packageName} data saved successfully with file URL: ${fileUrl}`);
 });
