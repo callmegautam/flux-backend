@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 3000
 
 # Correct way to run the dev server (usually "dev" is a script)
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "start"]

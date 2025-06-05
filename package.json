@@ -5,6 +5,7 @@
     "main": "src/index.js",
     "scripts": {
         "dev": "tsx --watch -r dotenv/config src/index.ts",
+        "start": "tsx -r dotenv/config src/index.ts",
         "build": "tsx -r dotenv/config src/index.ts",
         "db:push": "drizzle-kit push"
     },
